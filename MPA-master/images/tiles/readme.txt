@@ -1,0 +1,1 @@
+Déplacer les tuiles à cet endroit.
