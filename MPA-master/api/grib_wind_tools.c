@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "/bin/eccodes/include/eccodes.h"
+#include "/media/jmaxime/data-a/tal-projet/build/include/eccodes.h" //"/home/kevin/build/include/eccodes.h"
 
 /*
  * Fonctions utilitaires

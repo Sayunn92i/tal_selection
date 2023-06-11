@@ -6,6 +6,8 @@ from threading import Thread, Event
 from pathlib import Path
 from PIL import Image, ImageTk
 from tkinter import filedialog as fd
+import time
+import barbs
 
 class Grib:
     def __init__(self, map):
@@ -24,9 +26,11 @@ class Grib:
         self.data_longitudes = None
         self.barbs_ref = {}
         self.barbs_size = 64
+        self.barbs_open = []
+        self.barb_tk_image = []
         self.step = 0
-        self.thread = Thread(target=self.draw_barbs, daemon=True)
-        self.thread_run = Event()
+        #self.thread = Thread(target=self.draw_barbs, daemon=True)
+        #self.thread_run = Event()
 
         # Initialisation
         self.configuration()
@@ -49,6 +53,13 @@ class Grib:
 
         # Ligne temporelle
         self.app.timeline.config(command=self.update_datetime)
+
+        # pre chargement des barbs
+        self.caching_barb()
+
+        # pre chargement des barbs TEST
+        self.barbs = barbs.Barbs()
+
 
     """
     Active les fonctionnalités du fichier GRIB.
@@ -180,10 +191,13 @@ class Grib:
             self.activate()
 
             # Démarrage du thread qui dessine les barbules
+            """
             if not self.thread.is_alive():
                 self.thread_run.set()
                 self.thread = Thread(target=self.draw_barbs, daemon=True)
                 self.thread.start()
+            """
+            self.draw_barbs()
 
     """
     Ferme le fichier GRIB en fonction d'une popup de sauvegarde.
@@ -196,8 +210,8 @@ class Grib:
 
         if answer is not None:
             # Fermeture du thread qui dessine les barbules
-            self.thread_run.clear()
-            tools.wait(self.app, self.thread)
+            #self.thread_run.clear()
+            #tools.wait(self.app, self.thread)
 
             # Réinitialisation des informations du fichier
             self.reset_data()
@@ -225,8 +239,8 @@ class Grib:
 
         if answer is not None:
             # Fermeture du thread qui dessine les barbules
-            self.thread_run.clear()
-            tools.wait(self.app, self.thread)
+            #self.thread_run.clear()
+            #tools.wait(self.app, self.thread)
 
             # Fermeture de l'application
             self.app.destroy()
@@ -242,7 +256,7 @@ class Grib:
     @param speed: vitesse du vent en noeud
     @param direction: direction du vent en degré
     """
-    def load_barb(self, barb_bbox, size, speed, direction):
+    def load_barb2(self, barb_bbox, size, speed, direction):
         barb_path = Path(__file__).parent.absolute() / "images" / "barbs" / f"{speed}.png"
 
         # On vérifie si l'image existe avant d'ouvrir le fichier
@@ -258,66 +272,128 @@ class Grib:
             # Sauvegarde des informations de la barbule, on inclut l'objet image pour qu'il ne soit pas supprimé par le garbage collector
             self.barbs_ref[barb_bbox] = (barb, barb_image)
 
+    def caching_barb(self):
+        step = 5
+        min_wind = 0
+        max_wind = 150 + step
+
+        for speed in range(min_wind, max_wind, step):
+            barb_path = Path(__file__).parent.absolute() / "images" / "barbs" / f"{speed}.png"
+            self.barbs_open.append(Image.open(barb_path).resize((25,25)))
+            
+            self.barb_tk_image.append(ImageTk.PhotoImage(  Image.open(barb_path).resize((25,25)) ))
+            #self.barbs_open.insert(speed, Image.open(barb_path))
+
+    def load_barb(self, barb_bbox, size, speed, direction):
+        speed = speed//5
+        if speed >= 0 and speed <= 30:
+            barb_image = ImageTk.PhotoImage(self.barbs_open[speed].resize((size,size)).rotate(direction, expand=1))
+
+            # Ajout de la barbule sur le canevas
+            barb = self.app.canvas.create_image(barb_bbox[0] + size / 2, barb_bbox[1] + size / 2, image=barb_image, tag="barb")
+            #barb = self.app.canvas.create_image(barb_bbox[0] + size / 2, barb_bbox[1] + size / 2, image=self.barb_tk_image[speed], tag="barb")
+            # Sauvegarde des informations de la barbule, on inclut l'objet image pour qu'il ne soit pas supprimé par le garbage collector
+            #self.barbs_ref[barb_bbox] = (barb)
+
+
+
     """
     Dessine à partir du fichier GRIB toutes les barbules dans la zone visible.
     """
+    def _get_barbs_frequency(self, data_avg_size, data_avg_spacing):
+        data_frequency = data_avg_size / self.map.max_zoom_level / self.map.zoom_level / 2
+        if data_avg_spacing < 1:
+            data_frequency_max = data_avg_size / self.map.max_zoom_level / self.map.max_zoom_level / 2 / data_avg_spacing
+            data_frequency = data_frequency / data_avg_spacing - data_frequency_max
+        if data_frequency < 1:
+            data_frequency = 1
+            
+        return round(data_frequency)
+    
+    def _get_barb_direction(self, index_latitude, index_longitude):
+        u = self.data_u[self.step][index_latitude][index_longitude]
+        v = self.data_v[self.step][index_latitude][index_longitude]
+        
+        direction = None
+        if not np.isnan(u) and not np.isnan(v):
+            direction = int(tools.wind_uv_to_direction(u, v))
+        
+        return direction
+    
+    def _get_barb_position(self, index_latitude, index_longitude):
+        u = self.data_u[self.step][index_latitude][index_longitude]
+        v = self.data_v[self.step][index_latitude][index_longitude]
+
+        x,y = None,None
+        # u et v sont numériques ?
+        if not np.isnan(u) and not np.isnan(v):
+            latitude = self.data_latitudes[index_latitude]
+            longitude = self.data_longitudes[index_longitude]
+            x, y = tools.latlon_to_pixels(self.map.tiles_size, self.map.zoom_level, latitude, longitude)
+
+        return (x,y)
+    
+    def _get_barb_size(self, data_frequency, data_avg_spacing):
+        size = self.barbs_size / data_frequency
+        if data_avg_spacing < 1:
+            size = size / self.map.max_zoom_level * self.map.zoom_level * data_frequency
+        if size < 2:
+            size = 2
+        size = round(size)
+
+        return size
+    
+    def _get_barb_speed(self, index_latitude, index_longitude):
+        
+        u = self.data_u[self.step][index_latitude][index_longitude]
+        v = self.data_v[self.step][index_latitude][index_longitude]
+        
+        speed = None
+        if not np.isnan(u) and not np.isnan(v):
+            speed_in_ms = tools.wind_uv_to_speed(u, v)
+            speed_in_knots = speed_in_ms / 0.514444
+            speed = 5 * round(speed_in_knots / 5) # Arrondi à un multiple de 5
+            if speed > 150:
+                speed = 150
+        
+        return speed
+        
+    def _get_layer_position(self):
+        visible_bbox = tools.get_visible_bbox(self.app.canvas, self.map.zoom_level)
+        position = (visible_bbox[0], visible_bbox[1]) # x1 et y1
+        return position
+
     def draw_barbs(self):
-        while self.thread_run.is_set():
-            # Gestion de la fréquence d'affichage des barbules
-            data_avg_size = self.data_latitudes.size + self.data_longitudes.size / 2
-            data_avg_spacing = np.mean(np.diff(np.sort(self.data_latitudes))) + np.mean(np.diff(np.sort(self.data_longitudes))) / 2
-            data_frequency = data_avg_size / self.map.max_zoom_level / self.map.zoom_level / 2
-            if data_avg_spacing < 1:
-                data_frequency_max = data_avg_size / self.map.max_zoom_level / self.map.max_zoom_level / 2 / data_avg_spacing
-                data_frequency = data_frequency / data_avg_spacing - data_frequency_max
-            if data_frequency < 1:
-                data_frequency = 1
-            data_frequency = round(data_frequency)
+        # Creation du layer contenant les bars :
+        self.barbs.create_barbs_layer(self.app.canvas.winfo_width(), self.app.canvas.winfo_height())
 
-            # Obtention de l'intervalle des données des latitudes et longitudes pour la zone visible
-            visible_bbox = tools.get_visible_bbox(self.app.canvas, self.map.zoom_level)
-            data_range = tools.get_data_range(visible_bbox, self.map.tiles_size, self.map.zoom_level, data_frequency, self.data_latitudes, self.data_longitudes)
+        # dim et placement des barbs : 
+        data_avg_size = self.data_latitudes.size + self.data_longitudes.size / 2
+        data_avg_spacing = np.mean(np.diff(np.sort(self.data_latitudes))) + np.mean(np.diff(np.sort(self.data_longitudes))) / 2
+        data_frequency = self._get_barbs_frequency(data_avg_size, data_avg_spacing)
 
-            # Pour chaque indice visible on charge l'image associée selon une fréquence
-            for index_latitude in range(data_range[0], data_range[1], data_frequency):
-                for index_longitude in range(data_range[2], data_range[3], data_frequency):
-                    if self.thread_run.is_set():
-                        u = self.data_u[self.step][index_latitude][index_longitude]
-                        v = self.data_v[self.step][index_latitude][index_longitude]
+        # Obtention de l'intervalle des données des latitudes et longitudes pour la zone visible
+        visible_bbox = tools.get_visible_bbox(self.app.canvas, self.map.zoom_level)
+        data_range = tools.get_data_range(visible_bbox, self.map.tiles_size, self.map.zoom_level, data_frequency, self.data_latitudes, self.data_longitudes)
 
-                        # On vérifie si les composantes u et v sont numériques
-                        if not np.isnan(u) and not np.isnan(v):
-                            latitude = self.data_latitudes[index_latitude]
-                            longitude = self.data_longitudes[index_longitude]
-                            x, y = tools.latlon_to_pixels(self.map.tiles_size, self.map.zoom_level, latitude, longitude)
+        # defnir la taille des barbuels:
+        size = 0
+        layer_position = self._get_layer_position()
+        # On parcours les donnees grib :    
+        for index_latitude in range(data_range[0], data_range[1], data_frequency):
+            for index_longitude in range(data_range[2], data_range[3], data_frequency):
+                position = self._get_barb_position(index_latitude, index_longitude)
+                direction = self._get_barb_direction(index_latitude, index_longitude)
+                speed = self._get_barb_speed(index_latitude, index_longitude)
 
-                            # Gestion de la taille de l'image
-                            size = self.barbs_size / data_frequency
-                            if data_avg_spacing < 1:
-                                size = size / self.map.max_zoom_level * self.map.zoom_level * data_frequency
-                            if size < 1:
-                                size = 1
-                            size = round(size)
+                if ( position is not None and direction is not None and speed is not None ):
+                    self.barbs.add_barb_on_layer((int(position[0]-layer_position[0]),int(position[1]-layer_position[1])), size, speed, -direction)
 
-                            # Obtention de la boîte englobante de l'image
-                            x1, y1 = x - size / 2, y - size / 2
-                            x2, y2 = x1 + size, y1 + size
-                            z = self.map.zoom_level
-                            barb_bbox = (x1, y1, x2, y2, z)
+        self.barbs_layer = ImageTk.PhotoImage(self.barbs.get_layer())
+        self.layer_on_canvas = self.app.canvas.create_image(layer_position[0],layer_position[1], image=self.barbs_layer, anchor="nw", tag="barb")
 
-                            if barb_bbox not in self.barbs_ref and tools.is_intersection(visible_bbox, barb_bbox):
-                                # Définition de la direction
-                                direction = int(tools.wind_uv_to_direction(u, v))
-
-                                # Définition de la vitesse
-                                speed_in_ms = tools.wind_uv_to_speed(u, v)
-                                speed_in_knots = speed_in_ms / 0.514444
-                                speed = 5 * round(speed_in_knots / 5) # Arrondi à un multiple de 5
-                                if speed > 150:
-                                    speed = 150
-
-                                self.load_barb(barb_bbox, size, speed, -direction)
-
+    
+    
     """
     Met à jour les images des barbules dans une zone définie.
 
@@ -400,3 +476,4 @@ class Grib:
             # Suppression des images
             self.app.canvas.delete("barb")
             self.barbs_ref = {}
+            self.draw_barbs()

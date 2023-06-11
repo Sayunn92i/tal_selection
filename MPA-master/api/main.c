@@ -1,4 +1,4 @@
-#include "/bin/eccodes/include/eccodes.h"
+#include "/home/kevin/build/include/eccodes.h"
 #include "grib_wind.h"
 #include <string.h>
 #include <stdbool.h>

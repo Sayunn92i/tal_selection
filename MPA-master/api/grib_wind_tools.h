@@ -1,7 +1,7 @@
 #ifndef grib_wind_tools_H
 #define grib_wind_tools_H
 
-#include "/bin/eccodes/include/eccodes.h"
+#include "/home/kevin/build/include/eccodes.h"
 
 /*
  * Converti le format d'une date d'une chaine de caractère en un long : dd/mm/yyyy -> yyyymmdd.

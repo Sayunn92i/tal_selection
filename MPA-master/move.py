@@ -55,3 +55,4 @@ class Move:
     def end(self, event):
         self.map.mark_center()
         self.map.clear()
+        self.map.grib.draw_barbs()

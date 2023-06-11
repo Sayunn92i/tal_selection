@@ -5,7 +5,7 @@
 
 #include "grib_wind.h"
 #include "grib_wind_tools.h"
-#include "/bin/eccodes/include/eccodes.h"
+#include "/media/jmaxime/data-a/tal-projet/build/include/eccodes.h"// "/home/kevin/build/include/eccodes.h" // 
 
 int set_wind_u(char *filename, char *date, char *time, int lat, int lon, double value_u)
 {
@@ -271,6 +271,7 @@ int set_wind_area_generic(char *filename, char *date, char *time, double min_lat
 
     ldate = convert_date_format(date);
     ltime = convert_time_format(time);
+
     /* Open grib file */
     in = fopen(filename, "r");
     if (!in)
@@ -321,10 +322,11 @@ int set_wind_area_generic(char *filename, char *date, char *time, double min_lat
             GRIB_CHECK(grib_get_double_array(hv, "values", v_values, &values_len), 0);
             GRIB_CHECK(grib_get_double_array(hu, "latitudes", latValues, &values_len), 0);
             GRIB_CHECK(grib_get_double_array(hu, "longitudes", lonValues, &values_len), 0);
+
             for (j = 0; j < values_len; j++)
             {
 
-                if (latValues[j] < min_lat && latValues[j] > max_lat && lonValues[j] < min_lon && lonValues[j] > max_lon)
+                if (latValues[j] >= min_lat && latValues[j] <= max_lat && lonValues[j] >= min_lon && lonValues[j] <= max_lon)
                 {
 
                     switch (val_type)

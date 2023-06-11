@@ -33,15 +33,8 @@ class Application(tk.Tk):
         self.min_longitude_value = None
         self.max_latitude_value = None
         self.max_longitude_value = None
-            
         self.edit_type_list = None
         self.edit_type = None
-
-        self.edit_rect_button = None
-        self.edit_oval_button = None
-        self.edit_mouse_button = None
-        self.edit_selection_type = None
-
         self.edit_input_value = None
         self.edit_is_offset_icons = None
         self.edit_is_offset = None
@@ -169,51 +162,33 @@ class Application(tk.Tk):
     """
     def init_editbar(self):
         self.editbar = tk.Frame(self.canvas, bg="#a6b8c2", cursor="arrow", padx=10, pady=10)
-        self.editbar.rowconfigure(10, weight=1)
+        self.editbar.rowconfigure(7, weight=1)
         self.editbar.columnconfigure(0, weight=1, uniform="column")
         self.editbar.columnconfigure(1, weight=1, uniform="column")
 
-        self.edit_selection_type = tk.StringVar(value="rect")
-        select_label = tk.Label(self.editbar, bd=0, bg="#a6b8c2", text="Selection :")
-        select_label.grid(row=0, column=0, sticky="w", ipadx=5, ipady=5)
-
-        # Bouton de selection rectangulaire de l'édition
-        self.edit_rect_button = tk.Radiobutton(self.editbar, activebackground="#a6b8c2", bd=0, bg="#a6b8c2", highlightthickness=0, text="Rectangle",value="rect",variable=self.edit_selection_type)
-        self.edit_rect_button.grid(row=1, column=0, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
-
-        # Bouton de selection circulaire de l'édition
-        self.edit_oval_button = tk.Radiobutton(self.editbar, activebackground="#a6b8c2", bd=0, bg="#a6b8c2", highlightthickness=0, text="Ellipse",value="oval",variable=self.edit_selection_type)
-        self.edit_oval_button.grid(row=1, column=1, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
-
-        # Bouton de selection avec la souris de l'édition
-        self.edit_mouse_button = tk.Radiobutton(self.editbar, activebackground="#a6b8c2", bd=0, bg="#a6b8c2", highlightthickness=0, text="Souris",value="mouse",variable=self.edit_selection_type)
-        self.edit_mouse_button.grid(row=2, column=0, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
-
- 
-
         # Affichage de la latitude minimale
         min_latitude_label = tk.Label(self.editbar, bd=0, bg="#a6b8c2", text="Min latitude :")
-        min_latitude_label.grid(row=3, column=0, sticky="w", ipadx=5, ipady=5)
+        min_latitude_label.grid(row=0, column=0, sticky="w", ipadx=5, ipady=5)
         self.min_latitude_value = tk.Label(self.editbar, bd=0, bg="#a6b8c2")
-        self.min_latitude_value.grid(row=3, column=1, sticky="w", ipadx=5, ipady=5)
+        self.min_latitude_value.grid(row=0, column=1, sticky="w", ipadx=5, ipady=5)
 
         # Affichage de la longitude minimale
         min_longitude_label = tk.Label(self.editbar, bd=0, bg="#a6b8c2", text="Min longitude :")
-        min_longitude_label.grid(row=4, column=0, sticky="w", ipadx=5, ipady=5)
+        min_longitude_label.grid(row=1, column=0, sticky="w", ipadx=5, ipady=5)
         self.min_longitude_value = tk.Label(self.editbar, bd=0, bg="#a6b8c2")
-        self.min_longitude_value.grid(row=4, column=1, sticky="w", ipadx=5, ipady=5)
+        self.min_longitude_value.grid(row=1, column=1, sticky="w", ipadx=5, ipady=5)
 
         # Affichage de la latitude maximale
         max_latitude_label = tk.Label(self.editbar, bd=0, bg="#a6b8c2", text="Max latitude :")
-        max_latitude_label.grid(row=5, column=0, sticky="w", ipadx=5, ipady=5)
+        max_latitude_label.grid(row=2, column=0, sticky="w", ipadx=5, ipady=5)
         self.max_latitude_value = tk.Label(self.editbar, bd=0, bg="#a6b8c2")
-        self.max_latitude_value.grid(row=5, column=1, sticky="w", ipadx=5, ipady=5)
+        self.max_latitude_value.grid(row=2, column=1, sticky="w", ipadx=5, ipady=5)
 
         # Affichage de la longitude maximale
         max_longitude_label = tk.Label(self.editbar, bd=0, bg="#a6b8c2", text="Max longitude :")
-        max_longitude_label.grid(row=6, column=0, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
+        max_longitude_label.grid(row=3, column=0, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
         self.max_longitude_value = tk.Label(self.editbar, bd=0, bg="#a6b8c2")
-        self.max_longitude_value.grid(row=6, column=1, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
+        self.max_longitude_value.grid(row=3, column=1, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
 
         # On conserve le type d'édition
         self.edit_type_list = {
@@ -226,16 +201,16 @@ class Application(tk.Tk):
 
         # Menu déroulant du type d'édition
         edit_type_label = tk.Label(self.editbar, bd=0, bg="#a6b8c2", text="Modification :")
-        edit_type_label.grid(row=7, column=0, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
+        edit_type_label.grid(row=4, column=0, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
         edit_type_option = tk.OptionMenu(self.editbar, self.edit_type, *self.edit_type_list.keys())
         edit_type_option.config(activebackground="#3588b2", bg="#3d9ccc", highlightthickness=0)
-        edit_type_option.grid(row=7, column=1, sticky="ew", pady=(0, 10), ipadx=5, ipady=5)
+        edit_type_option.grid(row=4, column=1, sticky="ew", pady=(0, 10), ipadx=5, ipady=5)
 
         # Champ de saisie de la valeur d'édition
         edit_input_label = tk.Label(self.editbar, bd=0, bg="#a6b8c2", text="Valeur :")
-        edit_input_label.grid(row=8, column=0, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
+        edit_input_label.grid(row=5, column=0, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
         self.edit_input_value = tk.Entry(self.editbar)
-        self.edit_input_value.grid(row=8, column=1, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
+        self.edit_input_value.grid(row=5, column=1, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
 
         # On conserve si l'édition est un remplacement ou un ajout
         self.edit_is_offset_icons = {
@@ -247,15 +222,15 @@ class Application(tk.Tk):
 
         # Bouton de remplacement de l'édition
         self.edit_replace_button = tk.Radiobutton(self.editbar, activebackground="#a6b8c2", bd=0, bg="#a6b8c2", highlightthickness=0, text=f"{self.edit_is_offset_icons.get(False)} Remplacer", value=False, variable=self.edit_is_offset)
-        self.edit_replace_button.grid(row=9, column=0, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
+        self.edit_replace_button.grid(row=6, column=0, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
 
         # Bouton d'ajout de l'édition
         self.edit_add_button = tk.Radiobutton(self.editbar, activebackground="#a6b8c2", bd=0, bg="#a6b8c2", highlightthickness=0, text=f"{self.edit_is_offset_icons.get(True)} Ajouter", value=True, variable=self.edit_is_offset)
-        self.edit_add_button.grid(row=9, column=1, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
+        self.edit_add_button.grid(row=6, column=1, sticky="w", pady=(0, 10), ipadx=5, ipady=5)
 
         # Bouton de validation de l'édition
         self.edit_valid_button = tk.Button(self.editbar, activebackground="#3588b2", bg="#3d9ccc", highlightthickness=0, text="Valider")
-        self.edit_valid_button.grid(row=10, column=0, columnspan=2, sticky="sew", padx=10, ipadx=5, ipady=5)
+        self.edit_valid_button.grid(row=7, column=0, columnspan=2, sticky="sew", padx=10, ipadx=5, ipady=5)
 
     """
     Création de la date et de l'heure.

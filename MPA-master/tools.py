@@ -1,7 +1,6 @@
 import math
 import numpy as np
 
-
 """
 Calcule la direction du vent à partir des composantes u et v.
 
@@ -114,7 +113,14 @@ def get_tiles_range(bbox, tiles_size):
     end_column = int(bbox[2] // tiles_size) + 1 # +1 pour obtenir la tuile qui dépasse
     start_row = int(bbox[1] // tiles_size)
     end_row = int(bbox[3] // tiles_size) + 1 # +1 pour obtenir la tuile qui dépasse
+
+    # print("start_column:", start_column)
+    # print("end_column:", end_column)
+    # print("start_row:", start_row)
+    # print("end_row:", end_row)
+    
     return (start_column, end_column, start_row, end_row)
+    
 
 """
 Retourne l'intervalle des données des latitudes et longitudes à partir d'une boîte englobante en pixels (x1, y1, x2, y2, z).
